@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🛒 SQL Shop Hero</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    #mission-text {
+      font-size: 1.2em;
+      margin: 20px 0;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      font-family: monospace;
+      font-size: 16px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #result {
+      margin-top: 20px;
+      background: #f8f8f8;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    .message {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: red;
+    }
+
+    .schema-section {
+      margin-top: 30px;
+    }
+
+    .schema-section h2 {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛒 SQL Shop Hero</h1>
+
+    <div id="mission-container">
+      <p id="mission-text">Loading mission...</p>
+    </div>
+
+    <textarea id="sql-input" placeholder="Write your SQL query here..."></textarea>
+    <br>
+    <button onclick="runSQL()">Run Query</button>
+    <button onclick="fetchDBOutput()">Show DB Output</button>
+
+    <div id="result"></div>
+    <div id="status-message" class="message"></div>
+
+    <!-- 🧩 Table Schema Display -->
+    <div class="schema-section">
+      <h2>📊 Database Schema</h2>
+
+      <h3>🧍‍♂️ customers</h3>
+      <table>
+        <tr><th>Column</th><th>Type</th></tr>
+        <tr><td>id</td><td>INT PRIMARY KEY</td></tr>
+        <tr><td>name</td><td>VARCHAR(100)</td></tr>
+        <tr><td>email</td><td>VARCHAR(100)</td></tr>
+      </table>
+
+      <h3>📦 products</h3>
+      <table>
+        <tr><th>Column</th><th>Type</th></tr>
+        <tr><td>id</td><td>INT PRIMARY KEY</td></tr>
+        <tr><td>name</td><td>VARCHAR(100)</td></tr>
+        <tr><td>price</td><td>DECIMAL(10,2)</td></tr>
+        <tr><td>category_id</td><td>INT (FK → categories.id)</td></tr>
+      </table>
+
+      <h3>🏷️ categories</h3>
+      <table>
+        <tr><th>Column</th><th>Type</th></tr>
+        <tr><td>id</td><td>INT PRIMARY KEY</td></tr>
+        <tr><td>name</td><td>VARCHAR(100)</td></tr>
+      </table>
+
+      <h3>🧾 orders</h3>
+      <table>
+        <tr><th>Column</th><th>Type</th></tr>
+        <tr><td>id</td><td>INT PRIMARY KEY</td></tr>
+        <tr><td>customer_id</td><td>INT (FK → customers.id)</td></tr>
+        <tr><td>order_date</td><td>DATE</td></tr>
+      </table>
+
+      <h3>🛍️ order_items</h3>
+      <table>
+        <tr><th>Column</th><th>Type</th></tr>
+        <tr><td>id</td><td>INT PRIMARY KEY</td></tr>
+        <tr><td>order_id</td><td>INT (FK → orders.id)</td></tr>
+        <tr><td>product_id</td><td>INT (FK → products.id)</td></tr>
+        <tr><td>quantity</td><td>INT</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let currentMission = 0;
+    let missions = [];
+
+    window.onload = async function () {
+      try {
+        const res = await fetch('http://localhost:5000/missions');
+        missions = await res.json();
+        loadMission();
+      } catch (err) {
+        document.getElementById('mission-text').textContent = "⚠️ Failed to load missions.";
+      }
+    };
+
+    function loadMission() {
+      const mission = missions[currentMission];
+      document.getElementById('mission-text').textContent = `Mission ${mission.id}: ${mission.question}`;
+      document.getElementById('sql-input').value = '';
+      document.getElementById('result').innerHTML = '';
+      document.getElementById('status-message').textContent = '';
+    }
+
+    async function runSQL() {
+      const query = document.getElementById('sql-input').value;
+      const mission = missions[currentMission];
+
+      const res = await fetch('http://localhost:5000/check-sql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mission_id: mission.id,
+          query: query
+        })
+      });
+
+      const data = await res.json();
+      const resultDiv = document.getElementById('result');
+      const statusDiv = document.getElementById('status-message');
+
+      resultDiv.innerHTML = '';
+      statusDiv.textContent = '';
+
+      if (data.error) {
+        statusDiv.textContent = '❌ Error: ' + data.error;
+        statusDiv.className = 'message error';
+        return;
+      }
+
+      if (data.correct) {
+        statusDiv.textContent = '✅ Correct!';
+        statusDiv.className = 'message success';
+        resultDiv.innerHTML = renderTable(data.user_result || []);
+        currentMission++;
+        if (currentMission < missions.length) {
+          setTimeout(loadMission, 3500);
+        } else {
+          statusDiv.textContent = '🎉 Congratulations! All missions completed!';
+        }
+      } else {
+        statusDiv.textContent = '❌ Incorrect. Try again.';
+        statusDiv.className = 'message error';
+
+        if (data.expected_result && data.user_result) {
+          resultDiv.innerHTML = `<strong>Expected Result:</strong><br>${renderTable(data.expected_result)}<br><br>
+                                 <strong>Your Result:</strong><br>${renderTable(data.user_result)}`;
+        }
+      }
+    }
+
+    async function fetchDBOutput() {
+      const query = document.getElementById('sql-input').value;
+
+      const res = await fetch('http://localhost:5000/run-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query })
+      });
+
+      const data = await res.json();
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '';
+
+      if (data.error) {
+        resultDiv.innerHTML = `<span style="color:red">❌ ${data.error}</span>`;
+        return;
+      }
+
+      if (data.result && data.result.length > 0) {
+        resultDiv.innerHTML = renderTable(data.result);
+      } else {
+        resultDiv.textContent = "No results found.";
+      }
+    }
+
+    function renderTable(rows) {
+      if (rows.length === 0) return "No results.";
+      let table = "<table>";
+      const headers = Object.keys(rows[0]);
+      table += "<tr>";
+      headers.forEach(h => table += `<th>${h}</th>`);
+      table += "</tr>";
+      rows.forEach(row => {
+        table += "<tr>";
+        headers.forEach(h => table += `<td>${row[h]}</td>`);
+        table += "</tr>";
+      });
+      table += "</table>";
+      return table;
+    }
+  </script>
+</body>
+</html>
