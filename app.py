@@ -8,12 +8,13 @@ from missions import missions
 app = Flask(__name__)
 CORS(app)
 
-# ⚙️ Configure your MySQL connection here
+# ⚙️ Railway MySQL connection
 db_config = {
-    'host': 'localhost',
-    'user': 'root',       # <- change this
-    'password': 'Unlock$98',  # <- change this
-    'database': 'sql_shop_game'      # <- make sure this matches your DB
+    'host': 'maglev.proxy.rlwy.net',
+    'user': 'root',
+    'password': 'DWdqahtbPnwXnPQtOsCiTkjvoqLHkrza',
+    'database': 'railway',   # make sure this DB exists in Railway
+    'port': 48042
 }
 
 def run_query(sql):
@@ -84,4 +85,5 @@ def home():
     return jsonify({'status': 'API is running.'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # 👇 This makes it deploy-friendly
+    app.run(host="0.0.0.0", port=5000, debug=True)
