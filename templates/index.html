@@ -164,12 +164,14 @@
   </div>
 
   <script>
+    const BASE_URL = "https://sql-shop-game.onrender.com"; // ✅ use your deployed backend
+
     let currentMission = 0;
     let missions = [];
 
     window.onload = async function () {
       try {
-        const res = await fetch('http://localhost:5000/missions');
+        const res = await fetch(`${BASE_URL}/missions`);
         missions = await res.json();
         loadMission();
       } catch (err) {
@@ -189,7 +191,7 @@
       const query = document.getElementById('sql-input').value;
       const mission = missions[currentMission];
 
-      const res = await fetch('http://localhost:5000/check-sql', {
+      const res = await fetch(`${BASE_URL}/check-sql`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -235,7 +237,7 @@
     async function fetchDBOutput() {
       const query = document.getElementById('sql-input').value;
 
-      const res = await fetch('http://localhost:5000/run-query', {
+      const res = await fetch(`${BASE_URL}/run-query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: query })
