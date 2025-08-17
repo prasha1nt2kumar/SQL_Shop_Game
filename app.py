@@ -1,11 +1,9 @@
-# app.py
-
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import mysql.connector
 from missions import missions
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")  # tell Flask where templates are
 CORS(app)
 
 # ⚙️ Railway MySQL connection
@@ -61,7 +59,7 @@ def check_sql():
     except mysql.connector.Error as err:
         return jsonify({'error': str(err)}), 400
 
-# 🆕 New endpoint to run any query and return the result
+# 🆕 Run any custom query
 @app.route('/run-query', methods=['POST'])
 def run_custom_query():
     data = request.get_json()
@@ -80,9 +78,10 @@ def run_custom_query():
     except mysql.connector.Error as err:
         return jsonify({'error': str(err)}), 400
 
+# 🆕 Home route → serves index.html
 @app.route('/')
 def home():
-    return jsonify({'status': 'API is running.'})
+    return render_template("index.html")
 
 if __name__ == '__main__':
     # 👇 This makes it deploy-friendly
